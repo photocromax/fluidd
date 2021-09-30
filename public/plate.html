@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://jasonchen1982.github.io/three.interaction.js/examples/libs/three/build/three.min.js"></script>
+<script src="https://jasonchen1982.github.io/three.interaction.js/build/three.interaction.js"></script>
+</head>
+<body>
+<style>canvas { width: 100%; height: 90% }</style>
+<dv id="param">p</div>
+<canvas id="webgl" style="touch-action: none; cursor: inherit;"></canvas>
+<script>
+
+
+function getUrlVars() {
+    var vars = [], hash;
+    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    for (var i = 0; i < hashes.length; i++) {
+        hash = hashes[i].split('=');
+        vars.push(hash[0]);
+        vars[hash[0]] = hash[1];
+    }
+    return vars;
+}
+
+var p=decodeURIComponent(getUrlVars()['p']);
+//console.log(p);
+let jp=JSON.parse(p);
+
+let x=0;
+let y=1;
+let z=2;
+
+var scene = new THREE.Scene();
+var cameraP = new THREE.PerspectiveCamera(50, window.innerWidth/(window.innerHeight*0.9), 0.1, 2000);
+var cameraO = new THREE.OrthographicCamera(50, window.innerWidth/(window.innerHeight*0.9), 0.1, 2000);
+var camera = cameraP;
+
+var renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+
+
+document.body.appendChild(renderer.domElement);
+renderer.antialias = true;
+//renderer.setClearColor(0x41b882);
+renderer.setClearColor(0x444444);
+
+var interaction = new THREE.Interaction(renderer, scene, camera);
+
+//var material = new THREE.MeshBasicMaterial({color: 0xfffff, wireframe: false, transparent: 0.5});
+var cube,v,geometry,material; 
+jp.forEach((jpe) => { 
+	geometry = new THREE.BoxGeometry(jpe.boundingbox_size[x], jpe.boundingbox_size[y], jpe.boundingbox_size[z], 1, 1, 1);
+        material = new THREE.MeshPhongMaterial({ color: 0xff3300 })
+	cube = new THREE.Mesh(geometry, material);
+	v = new THREE.Vector3(0,0,100);
+	scene.add(cube);
+        cube.castShadow = true;
+        cube.receiveShadow = true;
+	cube.position.x=jpe.boundingbox_center[x];
+	cube.position.y=jpe.boundingbox_center[y];
+	cube.position.z=jpe.boundingbox_center[z];
+	cube.cursor = 'pointer';
+        cube.name = jpe.id;
+	cube.on('click', function(ev) {l(ev)});
+        cube.on('pointerdown', function(ev) {l(ev)});
+        cube.on('pointerup', function(ev) {l(ev)});
+/*
+	cube.on('touchstart', function(ev) {l(ev)});
+	cube.on('touchcancel', function(ev) {l(ev)});
+	cube.on('touchmove', function(ev) {l(ev)});
+	cube.on('touchend', function(ev) {l(ev)});
+	cube.on('mousedown', function(ev) {l(ev)});
+	cube.on('mouseout', function(ev) {l(ev)});
+	cube.on('mouseover', function(ev) {l(ev)});
+	cube.on('mousemove', function(ev) {l(ev)});
+	cube.on('mouseup', function(ev) {l(ev)});
+*/
+	/**
+	 * you can also listen on parent-node or any display-tree node,
+	 * source event will bubble up along with display-tree.
+	 * you can stop the bubble-up by invoke ev.stopPropagation function.
+	 */
+});
+
+/*
+scene.on('click', ev => {
+	console.log(ev);
+})
+scene.on('mouseover', ev => {
+	console.log(ev);
+})
+*/
+
+camera.position.x = 175;
+camera.position.y = -200;
+camera.position.z = 200;		
+
+
+dVector = new THREE.Vector3( 175, 175, 0 ) ;
+camera.lookAt( dVector );
+
+var ambient = new THREE.AmbientLight( 0x666666 );
+scene.add( ambient );
+var light = new THREE.PointLight(0xffffff);
+light.position.set(700, -350, 600);
+scene.add(light);
+
+
+function changeCamera(o,t) {
+  if (o === "top") {
+	camera.position.x = 175;
+	camera.position.y = 175;
+	camera.position.z = 350;
+        camera.lookAt( dVector );
+
+
+  } else if (o === "front_angle") {
+	camera.position.x = 175;
+	camera.position.y = -200;
+	camera.position.z = 200;
+	camera.lookAt( dVector );
+  }
+
+  if (t == "o") {
+	camera=cameraO;
+	interaction = new THREE.Interaction(renderer, scene, camera);
+  }
+  else if (t === "p") {
+	camera=cameraP;
+        interaction = new THREE.Interaction(renderer, scene, camera);
+  }
+}
+
+
+function onKeyDown( event ) {
+	switch ( event.keyCode ) {
+		case 79: /*O*/
+			camera = cameraO;
+			//helper = cameraOrthoHelper;
+			break;
+		case 80: /*P*/
+			camera = cameraP;
+			//helper = cameraPerspectiveHelper;
+			break;
+	}
+}
+
+
+function onWindowResize() {
+	SCREEN_WIDTH = window.innerWidth;
+	SCREEN_HEIGHT = window.innerHeight;
+	aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+	renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
+
+	camera.aspect = 0.5 * aspect;
+	camera.updateProjectionMatrix();
+
+	cameraP.aspect = 0.5 * aspect;
+	cameraP.updateProjectionMatrix();
+
+	cameraO.left = - 0.5 * frustumSize * aspect / 2;
+	cameraO.right = 0.5 * frustumSize * aspect / 2;
+	cameraO.top = frustumSize / 2;
+	cameraO.bottom = - frustumSize / 2;
+	cameraO.updateProjectionMatrix();
+}
+
+
+function l(ev) {
+	console.log(ev);
+        document.getElementById("param").innerHTML=ev.data.target.name;
+        console.log(ev.data.target.name + " " +  ev.type +" " + ev.data.target.material.color.g);
+        if (ev.type === "click") {
+		callMoonraker(ev);
+	}
+};
+
+function callMoonraker(ev) {
+        var mat = ev.data.target.material;
+	var xhr = new XMLHttpRequest();
+	var url = "/printer/gcode/script?script=SUPPRESS_PART PART=\"" +ev.data.target.name+ "\"";
+		xhr.open("POST", url, true);
+		xhr.timeout=400000;
+		xhr.setRequestHeader("Content-Type", "application/json");
+		xhr.onreadystatechange = function () {
+                        console.log("response");
+			console.log(mat);
+    			if (xhr.readyState === 4) {
+				console.log("mat");
+ 				console.log(mat);
+				if (xhr.status === 200) {
+        				var json = JSON.parse(xhr.responseText);
+        				console.log("result : " + json.result);
+					console.log("mat");
+					console.log(mat);
+					mat.color.r=0;
+					mat.transparent = true;
+    				} else {
+					console.log("status : " + xhr.status +" rs : "+xhr.readyState);
+				}
+			}
+		};
+	try {
+		ev.data.target.material.color.b=1;
+		xhr.send();
+	} catch (error) {
+		console.log(error);
+	}
+}
+
+function render() {
+	requestAnimationFrame(render);
+        //cube.translateOnAxis(v,0.01);
+	//cube.rotation.x += 0.01;
+	//cube.rotation.y += 0.01;
+	renderer.render(scene, camera);
+};
+
+render();
+document.getElementById("param").innerHTML=getUrlVars()['p'];
+</script>
+</body>
+</html>
